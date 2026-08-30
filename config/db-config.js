@@ -7,7 +7,7 @@ const dbConnection = async () => {
           .connect(process.env.MONGODB_URI)
         console.log('Db connected successfully')
     } catch (error) {
-        console.log('Error occurs while connecting the database')
+        console.log('Error occurs while connecting the database',error)
     }
 }
 
