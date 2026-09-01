@@ -28,7 +28,7 @@ const movieSchema = new mongoose.Schema({
 }, { timeStamp: true })
 
 const Movie = mongoose.model('movie', movieSchema)
-console.log(Movie)
+
 
 module.exports = {
     Movie
