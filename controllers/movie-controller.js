@@ -3,6 +3,7 @@ const {
   getMovieById,
   deleteMovieById,
   updateMovieById,
+  fetchMovies,
 } = require("../services/movie-service");
 const { StatusCodes } = require("http-status-codes");
 const {
@@ -86,9 +87,28 @@ const getMovie = async (req, res) => {
   }
 };
 
+const getAllMovies = async (req, res) => {
+  try {
+    const response = await fetchMovies(req.query);
+    if (response.err) {
+      errorResponseBody.err = response.err;
+      errorResponseBody.message = "Fail to find movies";
+      return res.status(response.code).json(errorResponseBody);
+    }
+    successResponseBody.data = response
+    return res.status(StatusCodes.OK).json(successResponseBody)
+  } catch (error) {
+     console.log(error);
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json(errorResponseBody);
+  }
+};
+
 module.exports = {
   createMovie,
   getMovie,
   deleteMovie,
   updateMovie,
+  getAllMovies
 };
