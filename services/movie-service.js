@@ -38,17 +38,6 @@ const createMovieService = async (data) => {
   }
 };
 
-const getAllMovies = async () => {
-  const movie = await Movie.find();
-  if (!movie) {
-    return {
-      err: "Movies not found",
-      code: StatusCodes.NOT_FOUND,
-    };
-  }
-  return movie;
-};
-
 const deleteMovieById = async (id) => {
   const movie = await Movie.deleteOne({ id });
   if (!movie) {
