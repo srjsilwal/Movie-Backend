@@ -16,4 +16,4 @@ router.put("/:id", validateRequest, updateMovie);
 router.patch("/:id", validateRequest, updateMovie);
 router.get("/", getAllMovies);
 
-module.exports = router;
+module.exports = { movieRouter: router };
