@@ -3,6 +3,7 @@ const {
   createTheatreService,
   fetchTheatre,
   deleteTheatreById,
+  insertMoviesIntoTheatre,
 } = require("../services/theatre-service");
 const {
   errorResponseBody,
@@ -64,8 +65,28 @@ const deleteTheatre = async (req, res) => {
       .json(errorResponseBody);
   }
 }
+
+const updateMoviesInTheatre = async (req, res) => {
+  try {
+    const response = await insertMoviesIntoTheatre(req.params.id, req.body.movieIds, req.body.insert);
+    if (response.err) {
+      errorResponseBody.err = response.err;
+      errorResponseBody.message = "Fail to update movies in Theatre";
+      return res.status(response.code).json(errorResponseBody);
+    }
+    successResponseBody.data = response;
+    successResponseBody.message = "Successfully updated movies in Theatre";
+    return res.status(StatusCodes.OK).json(successResponseBody);
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json(errorResponseBody);
+  }
+}
 module.exports = {
   createTheatre,
   getAllTheatre,
-  deleteTheatre
+  deleteTheatre,
+  updateMoviesInTheatre,
 };
