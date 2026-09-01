@@ -67,7 +67,42 @@ const validateTheatreRequest = (req, res, next) => {
   }
   next();
 }
+
+const validateUpdateMoviesRequest = (req, res, next) => { 
+  if (req.body.insert == undefined) {
+    bodyRequestValidator.err =
+      "Insert field is not present in the Request Body";
+    return res
+      .status(bodyRequestValidator.statusCode)
+      .json(bodyRequestValidator);
+  }
+
+  if (!req.body.movieIds) {
+    bodyRequestValidator.err =
+      "MovieIds are not present in the Request Body";
+    return res
+      .status(bodyRequestValidator.statusCode)
+      .json(bodyRequestValidator);
+  }
+  if (!Array.isArray(req.body.movieIds)) {
+    bodyRequestValidator.err =
+      "Movie Id should be an array in the Request Body";
+    return res
+      .status(bodyRequestValidator.statusCode)
+      .json(bodyRequestValidator);
+  }
+
+  if(req.body.movieIds.length <= 0) {
+    bodyRequestValidator.err =
+      "Movie Id array should not be empty in the Request Body";
+    return res
+      .status(bodyRequestValidator.statusCode)
+      .json(bodyRequestValidator);
+  }
+  next();
+}
 module.exports = {
   validateRequest,
-  validateTheatreRequest
+  validateTheatreRequest,
+  validateUpdateMoviesRequest,
 };
