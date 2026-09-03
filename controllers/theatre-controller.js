@@ -47,6 +47,7 @@ const getAllTheatre = async (req, res) => {
     // Response now contains data and pagination metadata
     successResponseBody.data = response.data;
     successResponseBody.pagination = response.pagination;
+    successResponseBody.message = "Successfully query your request"
     return res.status(StatusCodes.OK).json(successResponseBody);
   } catch (error) {
     console.log(error);

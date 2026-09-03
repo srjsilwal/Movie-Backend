@@ -54,8 +54,6 @@ const createTheatreService = async (data) => {
  */
 const fetchTheatre = async (filter) => {
   let query = {};
-  let pagination = {};
-
   // Build filter query based on provided parameters
   if (filter.city) {
     query.city = filter.city;
@@ -67,24 +65,18 @@ const fetchTheatre = async (filter) => {
     query.pincode = filter.pincode;
   }
 
-  // Set pagination limit (default to 5 if not provided)
-  if (filter && filter.limit) {
-    pagination.limit = filter.limit;
-  } else {
-    pagination.limit = 5;
-  }
+  // setup limit and page number
+  const limit = filter.limit ? parseInt(filter.limit) : 5;
+  const page = filter.page ? parseInt(filter.page) : 1;
 
-  // Calculate skip value for pagination (skip = pageNumber * limit)
-  if (filter && filter.skip) {
-    pagination.skip = filter.skip * pagination.limit;
-  }
+  const skip = (page - 1) * limit
 
   // Execute query with pagination options
-  const theatres = await Theatre.find(query, {}, pagination);
+  const theatres = await Theatre.find(query).skip(skip).limit(limit);
 
   // Get total count for pagination metadata
   const totalTheatres = await Theatre.countDocuments(query);
-  const totalPages = Math.ceil(totalTheatres / pagination.limit);
+  const totalPages = Math.ceil(totalTheatres / limit);
 
   // find() always returns an array, so check length instead of truthiness
   if (theatres.length === 0) {
@@ -100,8 +92,8 @@ const fetchTheatre = async (filter) => {
     pagination: {
       totalTheatres,
       totalPages,
-      currentPage: filter.skip || 0,
-      limit: pagination.limit,
+      currentPage: page,
+      limit: limit,
     },
   };
 };
@@ -174,7 +166,7 @@ const insertMoviesIntoTheatre = async (theatreId, movieIds, insert) => {
     movieIds.forEach((movieId) => {
       // Avoid adding duplicate movie IDs
       const exists = theatre.movies.some(
-        (id) => id.toString() === movieId.toString()
+        (id) => id.toString() === movieId.toString(),
       );
       if (!exists) {
         theatre.movies.push(movieId);
@@ -183,12 +175,12 @@ const insertMoviesIntoTheatre = async (theatreId, movieIds, insert) => {
   } else {
     // Remove mode: Remove specified movie IDs from the theatre's movies array
     // Convert movieIds to strings for consistent comparison with ObjectIds
-    const movieIdsToRemove = movieIds.map((id) => id.toString());
+    const idsToRemove = new Set(movieIds.map((id) => id.toString()));
 
-    // Filter out movies that match any of the IDs to remove
-    theatre.movies = theatre.movies.filter((savedMovieId) => {
-      return !movieIdsToRemove.includes(savedMovieId.toString());
-    });
+    // Filter out any movie whose string representation exists in the Set
+    theatre.movies = theatre.movies.filter(
+      (id) => !idsToRemove.has(id.toString()),
+    );
   }
 
   // Save the updated theatre
