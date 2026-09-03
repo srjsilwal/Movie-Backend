@@ -4,6 +4,7 @@ const {
   getAllTheatre,
   deleteTheatre,
   updateMoviesInTheatre,
+  updateTheatre,
 } = require("../controllers/theatre-controller");
 const {
   validateTheatreRequest,
@@ -15,6 +16,8 @@ router.post("/", validateTheatreRequest, createTheatre);
 router.get("/", getAllTheatre);
 router.delete("/:id", deleteTheatre);
 router.patch("/:id/movies", validateUpdateMoviesRequest, updateMoviesInTheatre)
+router.put("/:id", validateUpdateMoviesRequest, updateTheatre);
+router.patch("/:id", validateUpdateMoviesRequest, updateTheatre);
 
 module.exports = {
   theatreRouter: router,

@@ -4,6 +4,7 @@ const {
   fetchTheatre,
   deleteTheatreById,
   insertMoviesIntoTheatre,
+  updateTheatreById,
 } = require("../services/theatre-service");
 const {
   errorResponseBody,
@@ -29,6 +30,12 @@ const createTheatre = async (req, res) => {
   }
 };
 
+/**
+ * Controller to handle GET /theatre requests.
+ * Fetches all theatres with optional filtering and pagination.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 const getAllTheatre = async (req, res) => {
   try {
     const response = await fetchTheatre(req.query);
@@ -37,7 +44,9 @@ const getAllTheatre = async (req, res) => {
       errorResponseBody.message = "Fail to find Theatre";
       return res.status(response.code).json(errorResponseBody);
     }
-    successResponseBody.data = response;
+    // Response now contains data and pagination metadata
+    successResponseBody.data = response.data;
+    successResponseBody.pagination = response.pagination;
     return res.status(StatusCodes.OK).json(successResponseBody);
   } catch (error) {
     console.log(error);
@@ -66,6 +75,25 @@ const deleteTheatre = async (req, res) => {
   }
 }
 
+const updateTheatre = async (req, res) => {
+  try {
+    const response = await updateTheatreById(req.params.id, req.body);
+    if (response.err) {
+      errorResponseBody.err = response.err;
+      errorResponseBody.message = "Faile to update a theatre";
+      return res.status(response.code).json(errorResponseBody);
+    }
+    successResponseBody.data = response;
+    successResponseBody.message = "Successfully update a theatre";
+    return res.status(StatusCodes.CREATED).json(successResponseBody);
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json(errorResponseBody);
+  }
+};
+
 const updateMoviesInTheatre = async (req, res) => {
   try {
     const response = await insertMoviesIntoTheatre(req.params.id, req.body.movieIds, req.body.insert);
@@ -88,5 +116,6 @@ module.exports = {
   createTheatre,
   getAllTheatre,
   deleteTheatre,
+  updateTheatre,
   updateMoviesInTheatre,
 };
