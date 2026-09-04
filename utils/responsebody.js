@@ -1,18 +1,36 @@
-const errorResponseBody = {
-  err: {},
-  data: {},
-  message: "something went wrong, can't process the request",
-  success: false,
+// utils/responsebody.js
+
+/**
+ * Generates a fresh success response object for every request
+ */
+const createSuccessResponse = (
+  data,
+  message = "Successfully processed the request",
+) => {
+  return {
+    success: true,
+    message: message,
+    data: data,
+    err: null, // Explicitly clear errors on success
+  };
 };
 
-const successResponseBody = {
-  err: {},
-  data: {},
-  message: "successfully process the request",
-  success: true,
+/**
+ * Generates a fresh error response object for every request
+ */
+const createErrorResponse = (
+  err,
+  message = "Something went wrong, can't process the request",
+) => {
+  return {
+    success: false,
+    message: message,
+    err: err,
+    data: null, // Explicitly clear data on error
+  };
 };
 
 module.exports = {
-    errorResponseBody,
-    successResponseBody
-}
+  createSuccessResponse,
+  createErrorResponse,
+};

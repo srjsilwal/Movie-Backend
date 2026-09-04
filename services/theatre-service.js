@@ -69,7 +69,7 @@ const fetchTheatre = async (filter) => {
   const limit = filter.limit ? parseInt(filter.limit) : 5;
   const page = filter.page ? parseInt(filter.page) : 1;
 
-  const skip = (page - 1) * limit
+  const skip = (page - 1) * limit;
 
   // Execute query with pagination options
   const theatres = await Theatre.find(query).skip(skip).limit(limit);
@@ -190,10 +190,118 @@ const insertMoviesIntoTheatre = async (theatreId, movieIds, insert) => {
   return theatre.populate("movies");
 };
 
+
+
+/**
+ * service to get the single theatres and all of it's movies
+ * @param {string} theatreId - Id of the theatre which we want to fetch
+ * @returns {Promise<Object>} - fetch the single theatres by id with all of it's movies
+ */
+const getSingleThreateWithMovies = async (theatreId) => {
+  // Find the theatre by ID
+  const theatre = await Theatre.findById(theatreId).populate("movies");
+  if (!theatre) {
+    return {
+      err: "No theatre found by this id",
+      code: StatusCodes.NOT_FOUND,
+    };
+  }
+
+  return theatre;
+};
+
+
+
+/**
+ * This service will list all the theatres where a particular movie is running
+ * @param {movieId}
+ */
+const getAllTheatresByMovie = async (movieId) => {
+  try {
+    const theatres = await Theatre.find({ movies: movieId }).populate("movies");
+
+    if (theatres.length === 0) {
+      return {
+        err: "No theatres found running this movie",
+        code: StatusCodes.NOT_FOUND,
+      };
+    }
+
+    return theatres;
+  } catch (error) {
+    if (error.name === "CastError") {
+      return {
+        err: `Invalid movie ID format: "${error.value}"`,
+        code: StatusCodes.BAD_REQUEST, // 400, not 500!
+      };
+    }
+
+    // Catch any other unexpected errors
+    return {
+      err: { message: error.message },
+      code: StatusCodes.INTERNAL_SERVER_ERROR,
+    };
+  }
+};
+
+
+/**
+ * Checks if a specific movie is currently running in a specific theatre.
+ * @param {string} theatreId - ID of the theatre to check
+ * @param {string} movieId - ID of the movie to check for
+ * @returns {Promise<Object>} Result object with theatre details and presence status, or error response
+ */
+const checkMovieInTheatre = async (theatreId, movieId) => {
+  try {
+    // 1. Find the theatre
+    const theatre = await Theatre.findById(theatreId);
+
+    if (!theatre) {
+      return {
+        err: "Theatre not found",
+        code: StatusCodes.NOT_FOUND,
+      };
+    }
+
+    // 2. Check if the movie is in the theatre's movies array
+    const isPresent = theatre.movies.some((savedMovieId) => {
+      return savedMovieId.toString() === movieId.toString();
+    });
+
+    // 3. Return the result
+    return {
+      data: {
+        theatreId: theatre._id,
+        theatreName: theatre.name,
+        movieId: movieId,
+        isPresent: isPresent,
+      },
+      message: isPresent
+        ? "Movie is currently running at this theatre"
+        : "Movie is not running at this theatre",
+    };
+  } catch (error) {
+    if (error.name === "CastError") {
+      return {
+        err: `Invalid ID format: "${error.value}"`,
+        code: StatusCodes.BAD_REQUEST,
+      };
+    }
+
+    return {
+      err: { message: error.message },
+      code: StatusCodes.INTERNAL_SERVER_ERROR,
+    };
+  }
+};
+
 module.exports = {
   createTheatreService,
   fetchTheatre,
   deleteTheatreById,
   updateTheatreById,
   insertMoviesIntoTheatre,
+  getSingleThreateWithMovies,
+  getAllTheatresByMovie,
+  checkMovieInTheatre,
 };
