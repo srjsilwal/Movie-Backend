@@ -334,13 +334,9 @@ const checkMovie = async (req, res) => {
         );
     }
 
-    const message = response.data.isPresent
-      ? "Movie is currently running at this theatre"
-      : "Movie is not running at this theatre";
-
     return res
       .status(StatusCodes.OK)
-      .json(createSuccessResponse(response, message));
+      .json(createSuccessResponse(response, response.message));
   } catch (error) {
     console.error("Error in checkMovie controller:", error);
     return res

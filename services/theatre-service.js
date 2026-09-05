@@ -190,8 +190,6 @@ const insertMoviesIntoTheatre = async (theatreId, movieIds, insert) => {
   return theatre.populate("movies");
 };
 
-
-
 /**
  * service to get the single theatres and all of it's movies
  * @param {string} theatreId - Id of the theatre which we want to fetch
@@ -209,8 +207,6 @@ const getSingleThreateWithMovies = async (theatreId) => {
 
   return theatre;
 };
-
-
 
 /**
  * This service will list all the theatres where a particular movie is running
@@ -244,7 +240,6 @@ const getAllTheatresByMovie = async (movieId) => {
   }
 };
 
-
 /**
  * Checks if a specific movie is currently running in a specific theatre.
  * @param {string} theatreId - ID of the theatre to check
@@ -270,12 +265,11 @@ const checkMovieInTheatre = async (theatreId, movieId) => {
 
     // 3. Return the result
     return {
-      data: {
-        theatreId: theatre._id,
-        theatreName: theatre.name,
-        movieId: movieId,
-        isPresent: isPresent,
-      },
+      theatreId: theatre._id,
+      theatreName: theatre.name,
+      movieId: movieId,
+      isPresent: isPresent,
+
       message: isPresent
         ? "Movie is currently running at this theatre"
         : "Movie is not running at this theatre",
