@@ -1,19 +1,18 @@
 const { StatusCodes } = require("http-status-codes");
 const { Theatre } = require("../models/theatre-model.js");
+const { AppError } = require("../utils/app-error");
 
 /**
  * Service to create a new theatre in the database.
  * @param {Object} data - Theatre data containing name, description, city, pinCode, address
- * @returns {Promise<Object>} Created theatre object or error response
+ * @returns {Promise<Object>} Created theatre object
+ * @throws {AppError} If theatre creation fails or validation errors occur
  */
 const createTheatreService = async (data) => {
   try {
     const theatre = await Theatre.create(data);
     if (!theatre) {
-      return {
-        err: "Theatre cannot be created",
-        code: StatusCodes.NO_CONTENT,
-      };
+      throw new AppError("Theatre cannot be created", StatusCodes.NO_CONTENT);
     }
     return theatre;
   } catch (error) {
@@ -22,21 +21,19 @@ const createTheatreService = async (data) => {
       Object.keys(error.errors).forEach((key) => {
         err[key] = error.errors[key].message;
       });
-      return { err, code: StatusCodes.UNPROCESSABLE_ENTITY };
+      throw new AppError("Validation failed", StatusCodes.UNPROCESSABLE_ENTITY, err);
     }
 
     if (error.name === "MongoServerError" && error.code === 11000) {
       const field = Object.keys(error.keyPattern)[0];
-      return {
-        err: { [field]: "already exists" },
-        code: StatusCodes.UNPROCESSABLE_ENTITY,
-      };
+      throw new AppError(
+        "Duplicate field",
+        StatusCodes.UNPROCESSABLE_ENTITY,
+        { [field]: "already exists" },
+      );
     }
 
-    return {
-      err: { message: error.message },
-      code: StatusCodes.INTERNAL_SERVER_ERROR,
-    };
+    throw new AppError(error.message, StatusCodes.INTERNAL_SERVER_ERROR);
   }
 };
 
@@ -50,7 +47,8 @@ const createTheatreService = async (data) => {
  * @param {number} [filter.pincode] - Filter theatres by pincode
  * @param {number} [filter.limit] - Number of results per page (default: 5)
  * @param {number} [filter.skip] - Page number for pagination (0-indexed)
- * @returns {Promise<Object>} Array of theatres with pagination metadata or error response
+ * @returns {Promise<Object>} Array of theatres with pagination metadata
+ * @throws {AppError} If no theatres are found
  */
 const fetchTheatre = async (filter) => {
   let query = {};
@@ -80,10 +78,7 @@ const fetchTheatre = async (filter) => {
 
   // find() always returns an array, so check length instead of truthiness
   if (theatres.length === 0) {
-    return {
-      err: "Not able to find the query theatre",
-      code: StatusCodes.NOT_FOUND,
-    };
+    throw new AppError("Not able to find the query theatre", StatusCodes.NOT_FOUND);
   }
 
   // Return theatres along with pagination metadata
@@ -101,15 +96,13 @@ const fetchTheatre = async (filter) => {
 /**
  * Service to delete a theatre by its ID.
  * @param {string} id - Theatre ID to delete
- * @returns {Promise<Object>} Deletion result or error response
+ * @returns {Promise<Object>} Deletion result
+ * @throws {AppError} If theatre is not found
  */
 const deleteTheatreById = async (id) => {
   const theatre = await Theatre.deleteOne({ id });
   if (!theatre) {
-    return {
-      err: "No theatre found by this id",
-      code: StatusCodes.NOT_FOUND,
-    };
+    throw new AppError("No theatre found by this id", StatusCodes.NOT_FOUND);
   }
   return theatre;
 };
@@ -118,7 +111,8 @@ const deleteTheatreById = async (id) => {
  * Service to update theatre details by ID.
  * @param {string} id - Theatre ID to update
  * @param {Object} data - Updated theatre data
- * @returns {Promise<Object>} Updated theatre object or error response
+ * @returns {Promise<Object>} Updated theatre object
+ * @throws {AppError} If theatre is not found or validation fails
  */
 const updateTheatreById = async (id, data) => {
   try {
@@ -127,10 +121,7 @@ const updateTheatreById = async (id, data) => {
       runValidators: true,
     });
     if (!theatre) {
-      return {
-        err: "No theatre found by this id",
-        code: StatusCodes.NOT_FOUND,
-      };
+      throw new AppError("No theatre found by this id", StatusCodes.NOT_FOUND);
     }
     return theatre;
   } catch (error) {
@@ -139,8 +130,9 @@ const updateTheatreById = async (id, data) => {
       Object.keys(error.errors).forEach((key) => {
         err[key] = error.errors[key].message;
       });
-      return { err, code: StatusCodes.UNPROCESSABLE_ENTITY };
+      throw new AppError("Validation failed", StatusCodes.UNPROCESSABLE_ENTITY, err);
     }
+    throw error;
   }
 };
 
@@ -149,16 +141,14 @@ const updateTheatreById = async (id, data) => {
  * @param {string} theatreId - ID of the theatre to update
  * @param {Array<string>} movieIds - Array of movie IDs to insert or remove
  * @param {boolean} insert - true to insert movies, false to remove movies
- * @returns {Promise<Object>} Updated theatre with populated movies or error response
+ * @returns {Promise<Object>} Updated theatre with populated movies
+ * @throws {AppError} If theatre is not found
  */
 const insertMoviesIntoTheatre = async (theatreId, movieIds, insert) => {
   // Find the theatre by ID
   const theatre = await Theatre.findById(theatreId);
   if (!theatre) {
-    return {
-      err: "No theatre found by this id",
-      code: StatusCodes.NOT_FOUND,
-    };
+    throw new AppError("No theatre found by this id", StatusCodes.NOT_FOUND);
   }
 
   if (insert) {
@@ -194,15 +184,13 @@ const insertMoviesIntoTheatre = async (theatreId, movieIds, insert) => {
  * service to get the single theatres and all of it's movies
  * @param {string} theatreId - Id of the theatre which we want to fetch
  * @returns {Promise<Object>} - fetch the single theatres by id with all of it's movies
+ * @throws {AppError} If theatre is not found
  */
 const getSingleThreateWithMovies = async (theatreId) => {
   // Find the theatre by ID
   const theatre = await Theatre.findById(theatreId).populate("movies");
   if (!theatre) {
-    return {
-      err: "No theatre found by this id",
-      code: StatusCodes.NOT_FOUND,
-    };
+    throw new AppError("No theatre found by this id", StatusCodes.NOT_FOUND);
   }
 
   return theatre;
@@ -210,33 +198,30 @@ const getSingleThreateWithMovies = async (theatreId) => {
 
 /**
  * This service will list all the theatres where a particular movie is running
- * @param {movieId}
+ * @param {string} movieId
+ * @returns {Promise<Object>} List of theatres showing the movie
+ * @throws {AppError} If no theatres found or invalid movie ID format
  */
 const getAllTheatresByMovie = async (movieId) => {
   try {
     const theatres = await Theatre.find({ movies: movieId }).populate("movies");
 
     if (theatres.length === 0) {
-      return {
-        err: "No theatres found running this movie",
-        code: StatusCodes.NOT_FOUND,
-      };
+      throw new AppError("No theatres found running this movie", StatusCodes.NOT_FOUND);
     }
 
     return theatres;
   } catch (error) {
     if (error.name === "CastError") {
-      return {
-        err: `Invalid movie ID format: "${error.value}"`,
-        code: StatusCodes.BAD_REQUEST, // 400, not 500!
-      };
+      throw new AppError(
+        `Invalid movie ID format: "${error.value}"`,
+        StatusCodes.BAD_REQUEST,
+      );
     }
 
-    // Catch any other unexpected errors
-    return {
-      err: { message: error.message },
-      code: StatusCodes.INTERNAL_SERVER_ERROR,
-    };
+    // Re-throw AppError as-is, wrap other errors
+    if (error instanceof AppError) throw error;
+    throw new AppError(error.message, StatusCodes.INTERNAL_SERVER_ERROR);
   }
 };
 
@@ -244,7 +229,8 @@ const getAllTheatresByMovie = async (movieId) => {
  * Checks if a specific movie is currently running in a specific theatre.
  * @param {string} theatreId - ID of the theatre to check
  * @param {string} movieId - ID of the movie to check for
- * @returns {Promise<Object>} Result object with theatre details and presence status, or error response
+ * @returns {Promise<Object>} Result object with theatre details and presence status
+ * @throws {AppError} If theatre not found or invalid ID format
  */
 const checkMovieInTheatre = async (theatreId, movieId) => {
   try {
@@ -252,10 +238,7 @@ const checkMovieInTheatre = async (theatreId, movieId) => {
     const theatre = await Theatre.findById(theatreId);
 
     if (!theatre) {
-      return {
-        err: "Theatre not found",
-        code: StatusCodes.NOT_FOUND,
-      };
+      throw new AppError("Theatre not found", StatusCodes.NOT_FOUND);
     }
 
     // 2. Check if the movie is in the theatre's movies array
@@ -276,16 +259,14 @@ const checkMovieInTheatre = async (theatreId, movieId) => {
     };
   } catch (error) {
     if (error.name === "CastError") {
-      return {
-        err: `Invalid ID format: "${error.value}"`,
-        code: StatusCodes.BAD_REQUEST,
-      };
+      throw new AppError(
+        `Invalid ID format: "${error.value}"`,
+        StatusCodes.BAD_REQUEST,
+      );
     }
 
-    return {
-      err: { message: error.message },
-      code: StatusCodes.INTERNAL_SERVER_ERROR,
-    };
+    if (error instanceof AppError) throw error;
+    throw new AppError(error.message, StatusCodes.INTERNAL_SERVER_ERROR);
   }
 };
 

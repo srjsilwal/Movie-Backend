@@ -1,14 +1,12 @@
 const { Movie } = require("../models/movie-model.js");
 const { StatusCodes } = require("http-status-codes");
+const { AppError } = require("../utils/app-error");
 
 const createMovieService = async (data) => {
   try {
     const movie = await Movie.create(data);
     if (!movie) {
-      return {
-        err: "movie cannot created.",
-        code: StatusCodes.NO_CONTENT,
-      };
+      throw new AppError("Movie cannot be created", StatusCodes.NO_CONTENT);
     }
     return movie;
   } catch (error) {
@@ -18,33 +16,29 @@ const createMovieService = async (data) => {
       Object.keys(error.errors).forEach((key) => {
         err[key] = error.errors[key].message;
       });
-      return { err, code: StatusCodes.UNPROCESSABLE_ENTITY };
+      throw new AppError("Validation failed", StatusCodes.UNPROCESSABLE_ENTITY, err);
     }
 
     // MongoDB duplicate-key error — code 11000, has keyValue/keyPattern
     if (error.name === "MongoServerError" && error.code === 11000) {
       const field = Object.keys(error.keyPattern)[0];
-      return {
-        err: { [field]: "already exists" },
-        code: StatusCodes.UNPROCESSABLE_ENTITY,
-      };
+      throw new AppError(
+        "Duplicate field",
+        StatusCodes.UNPROCESSABLE_ENTITY,
+        { [field]: "already exists" },
+      );
     }
 
-    // Fallback
-    return {
-      err: { message: error.message },
-      code: StatusCodes.INTERNAL_SERVER_ERROR,
-    };
+    // Re-throw AppError as-is, wrap other errors
+    if (error instanceof AppError) throw error;
+    throw new AppError(error.message, StatusCodes.INTERNAL_SERVER_ERROR);
   }
 };
 
 const deleteMovieById = async (id) => {
   const movie = await Movie.deleteOne({ id });
   if (!movie) {
-    return {
-      err: "No movie found by this id",
-      code: StatusCodes.NOT_FOUND,
-    };
+    throw new AppError("No movie found by this id", StatusCodes.NOT_FOUND);
   }
   return movie;
 };
@@ -56,10 +50,7 @@ const updateMovieById = async (id, data) => {
       runValidators: true,
     });
     if (!movie) {
-      return {
-        err: "No movie found by this id",
-        code: StatusCodes.NOT_FOUND,
-      };
+      throw new AppError("No movie found by this id", StatusCodes.NOT_FOUND);
     }
     return movie;
   } catch (error) {
@@ -68,41 +59,36 @@ const updateMovieById = async (id, data) => {
       Object.keys(error.errors).forEach((key) => {
         err[key] = error.errors[key].message;
       });
-        return { err, code: StatusCodes.UNPROCESSABLE_ENTITY };
+      throw new AppError("Validation failed", StatusCodes.UNPROCESSABLE_ENTITY, err);
     }
+    throw error;
   }
 };
 
 const getMovieById = async (id) => {
   const movie = await Movie.findById(id);
   if (!movie) {
-    return {
-      err: "No movie found by this id",
-      code: StatusCodes.NOT_FOUND,
-    };
+    throw new AppError("No movie found by this id", StatusCodes.NOT_FOUND);
   }
   return movie;
 };
 
-const fetchMovies = async(filter) => {
-  let query = {}
+const fetchMovies = async (filter) => {
+  let query = {};
   if (filter.name) {
-    query.name = filter.name
+    query.name = filter.name;
   }
-  const movies = await Movie.find(query)
+  const movies = await Movie.find(query);
   if (!movies) {
-    return {
-      err: 'Not able to find the query movies',
-      code: StatusCodes.NOT_FOUND
-    }
+    throw new AppError("Not able to find the query movies", StatusCodes.NOT_FOUND);
   }
-  return movies
-}
+  return movies;
+};
 
 module.exports = {
   createMovieService,
   getMovieById,
   deleteMovieById,
   updateMovieById,
-  fetchMovies
+  fetchMovies,
 };
