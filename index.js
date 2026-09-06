@@ -5,6 +5,8 @@ const { theatreRouter } = require("./routes/theatre-route");
 const swaggerJSDoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
 const generateSwaggerFromRoutes = require("./swagger/autoSwagger");
+const { StatusCodes } = require("http-status-codes");
+const { createErrorResponse } = require("./utils/responsebody");
 require("dotenv").config();
 
 dbConnection();
@@ -43,6 +45,17 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use("/mb/api/v1/movies", movieRouter);
 app.use("/mb/api/v1/theatres", theatreRouter);
+
+// Centralized error handling middleware
+// Must be defined after all routes
+app.use((err, req, res, next) => {
+  const statusCode = err.statusCode || StatusCodes.INTERNAL_SERVER_ERROR;
+  const errorData = err.data || { message: err.message };
+
+  return res
+    .status(statusCode)
+    .json(createErrorResponse(errorData, err.message));
+});
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
