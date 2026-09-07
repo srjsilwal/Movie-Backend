@@ -25,8 +25,9 @@ const {
  */
 const createTheatre = async (req, res, next) => {
   try {
+    const userId = req.user.id
     // Call the service layer to create a new theatre with the request body data
-    const response = await createTheatreService(req.body);
+    const response = await createTheatreService(req.body, userId);
 
     // On success, send the created theatre data back to the client
     return res
@@ -73,8 +74,9 @@ const getAllTheatre = async (req, res, next) => {
  */
 const deleteTheatre = async (req, res, next) => {
   try {
+    const user = req.user
     // Call the service layer to delete the theatre by ID
-    const response = await deleteTheatreById(req.params.id);
+    const response = await deleteTheatreById(req.params.id, user);
 
     // On success, send confirmation back to the client
     return res
@@ -97,8 +99,9 @@ const deleteTheatre = async (req, res, next) => {
  */
 const updateTheatre = async (req, res, next) => {
   try {
+    const user = req.user
     // Call the service layer to update the theatre with the provided ID and new data
-    const response = await updateTheatreById(req.params.id, req.body);
+    const response = await updateTheatreById(req.params.id, req.body, user);
 
     // On success, send the updated theatre data back to the client
     return res
@@ -121,11 +124,13 @@ const updateTheatre = async (req, res, next) => {
  */
 const updateMoviesInTheatre = async (req, res, next) => {
   try {
+    const user = req.user
     // Call the service layer to insert or remove movies from the theatre
     const response = await insertMoviesIntoTheatre(
       req.params.id,
       req.body.movieIds,
       req.body.insert,
+      user
     );
 
     // On success, send the updated theatre data back to the client

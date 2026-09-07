@@ -13,15 +13,16 @@ const {
   validateTheatreRequest,
   validateUpdateMoviesRequest,
 } = require("../middlewares/bodyRequestValidators");
+const { isAuthenticated } = require("../middlewares/user-middleware");
 const router = express.Router();
 
-router.post("/", validateTheatreRequest, createTheatre);
+router.post("/", isAuthenticated, validateTheatreRequest, createTheatre);
 router.get("/", getAllTheatre);
 router.get("/:id", getSingleTheatre);
-router.delete("/:id", deleteTheatre);
-router.patch("/:id/movies", validateUpdateMoviesRequest, updateMoviesInTheatre)
-router.put("/:id", validateUpdateMoviesRequest, updateTheatre);
-router.patch("/:id", validateUpdateMoviesRequest, updateTheatre);
+router.delete("/:id", isAuthenticated, deleteTheatre);
+router.patch("/:id/movies", isAuthenticated, validateUpdateMoviesRequest, updateMoviesInTheatre)
+router.put("/:id", isAuthenticated, validateUpdateMoviesRequest, updateTheatre);
+router.patch("/:id", isAuthenticated, validateUpdateMoviesRequest, updateTheatre);
 router.get("/movie/:id", getAllTheatreByMovie);
 router.get("/:theatreId/movies/:movieId", checkMovie);
 
