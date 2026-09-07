@@ -2,9 +2,9 @@ const { Movie } = require("../models/movie-model.js");
 const { StatusCodes } = require("http-status-codes");
 const { AppError } = require("../utils/app-error");
 
-const createMovieService = async (data) => {
+const createMovieService = async (data, userId) => {
   try {
-    const movie = await Movie.create(data);
+    const movie = await Movie.create({ ...data, owner: { userId } });
     if (!movie) {
       throw new AppError("Movie cannot be created", StatusCodes.NO_CONTENT);
     }
@@ -35,23 +35,29 @@ const createMovieService = async (data) => {
   }
 };
 
-const deleteMovieById = async (id) => {
-  const movie = await Movie.deleteOne({ id });
+const deleteMovieById = async (id, user) => {
+  const movie = await Movie.findById(id);
   if (!movie) {
     throw new AppError("No movie found by this id", StatusCodes.NOT_FOUND);
   }
+  if (movie.owner.toString() !== user.id && user.userRole !== 'admin') {
+    throw new AppError("You are not authorized to delete this movie", StatusCodes.FORBIDDEN);
+  }
+  await Movie.deleteOne({ id });
   return movie;
 };
 
-const updateMovieById = async (id, data) => {
+const updateMovieById = async (id, data, user) => {
   try {
-    const movie = await Movie.findByIdAndUpdate(id, data, {
-      new: true,
-      runValidators: true,
-    });
+    const movie = await Movie.findById(id);
     if (!movie) {
       throw new AppError("No movie found by this id", StatusCodes.NOT_FOUND);
     }
+    if (movie.owner.toString() !== user.id && user.userRole !== 'admin') {
+      throw new AppError("You are not authorized to update the movie", StatusCodes.FORBIDDEN);
+    }
+    Object.assign(movie, data);
+    await movie.save();
     return movie;
   } catch (error) {
     if (error.name == "ValidationError") {

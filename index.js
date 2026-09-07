@@ -7,6 +7,7 @@ const swaggerUi = require("swagger-ui-express");
 const generateSwaggerFromRoutes = require("./swagger/autoSwagger");
 const { StatusCodes } = require("http-status-codes");
 const { createErrorResponse } = require("./utils/responsebody");
+const { userRouter } = require("./routes/user-route");
 require("dotenv").config();
 
 dbConnection();
@@ -45,6 +46,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use("/mb/api/v1/movies", movieRouter);
 app.use("/mb/api/v1/theatres", theatreRouter);
+app.use("/mb/api/v1/users", userRouter);
 
 // Centralized error handling middleware
 // Must be defined after all routes

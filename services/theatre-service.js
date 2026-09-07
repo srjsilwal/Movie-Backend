@@ -7,10 +7,11 @@ const { AppError } = require("../utils/app-error");
  * @param {Object} data - Theatre data containing name, description, city, pinCode, address
  * @returns {Promise<Object>} Created theatre object
  * @throws {AppError} If theatre creation fails or validation errors occur
+ * @param {userId} - set the currently logged in user as the owner of theatre which is being created.
  */
-const createTheatreService = async (data) => {
+const createTheatreService = async (data, userId) => {
   try {
-    const theatre = await Theatre.create(data);
+    const theatre = await Theatre.create({ ...data, owner: { userId } });
     if (!theatre) {
       throw new AppError("Theatre cannot be created", StatusCodes.NO_CONTENT);
     }
@@ -21,16 +22,18 @@ const createTheatreService = async (data) => {
       Object.keys(error.errors).forEach((key) => {
         err[key] = error.errors[key].message;
       });
-      throw new AppError("Validation failed", StatusCodes.UNPROCESSABLE_ENTITY, err);
+      throw new AppError(
+        "Validation failed",
+        StatusCodes.UNPROCESSABLE_ENTITY,
+        err,
+      );
     }
 
     if (error.name === "MongoServerError" && error.code === 11000) {
       const field = Object.keys(error.keyPattern)[0];
-      throw new AppError(
-        "Duplicate field",
-        StatusCodes.UNPROCESSABLE_ENTITY,
-        { [field]: "already exists" },
-      );
+      throw new AppError("Duplicate field", StatusCodes.UNPROCESSABLE_ENTITY, {
+        [field]: "already exists",
+      });
     }
 
     throw new AppError(error.message, StatusCodes.INTERNAL_SERVER_ERROR);
@@ -78,7 +81,10 @@ const fetchTheatre = async (filter) => {
 
   // find() always returns an array, so check length instead of truthiness
   if (theatres.length === 0) {
-    throw new AppError("Not able to find the query theatre", StatusCodes.NOT_FOUND);
+    throw new AppError(
+      "Not able to find the query theatre",
+      StatusCodes.NOT_FOUND,
+    );
   }
 
   // Return theatres along with pagination metadata
@@ -99,11 +105,16 @@ const fetchTheatre = async (filter) => {
  * @returns {Promise<Object>} Deletion result
  * @throws {AppError} If theatre is not found
  */
-const deleteTheatreById = async (id) => {
-  const theatre = await Theatre.deleteOne({ id });
+const deleteTheatreById = async (id, user) => {
+  const theatre = await Theatre.findById(id)
   if (!theatre) {
     throw new AppError("No theatre found by this id", StatusCodes.NOT_FOUND);
   }
+  if (theatre.owner.toString() !== user.id && user.userRole !== 'admin') {
+    throw new AppError("You are not authorized to delete this theatre", StatusCodes.FORBIDDEN)
+  }
+  await Theatre.deleteOne({ id });
+
   return theatre;
 };
 
@@ -114,15 +125,17 @@ const deleteTheatreById = async (id) => {
  * @returns {Promise<Object>} Updated theatre object
  * @throws {AppError} If theatre is not found or validation fails
  */
-const updateTheatreById = async (id, data) => {
+const updateTheatreById = async (id, data, user) => {
   try {
-    const theatre = await Theatre.findByIdAndUpdate(id, data, {
-      new: true,
-      runValidators: true,
-    });
+    const theatre = await Theatre.findById(id);
     if (!theatre) {
       throw new AppError("No theatre found by this id", StatusCodes.NOT_FOUND);
     }
+    if (theatre.owner.toString() !== user.id && user.userRole !== 'admin') {
+      throw new AppError("You are not authorized to update the theatre", StatusCodes.FORBIDDEN)
+    }
+    Object.assign(theatre, data);
+    await theatre.save();
     return theatre;
   } catch (error) {
     if (error.name == "ValidationError") {
@@ -130,7 +143,11 @@ const updateTheatreById = async (id, data) => {
       Object.keys(error.errors).forEach((key) => {
         err[key] = error.errors[key].message;
       });
-      throw new AppError("Validation failed", StatusCodes.UNPROCESSABLE_ENTITY, err);
+      throw new AppError(
+        "Validation failed",
+        StatusCodes.UNPROCESSABLE_ENTITY,
+        err,
+      );
     }
     throw error;
   }
@@ -144,13 +161,16 @@ const updateTheatreById = async (id, data) => {
  * @returns {Promise<Object>} Updated theatre with populated movies
  * @throws {AppError} If theatre is not found
  */
-const insertMoviesIntoTheatre = async (theatreId, movieIds, insert) => {
+const insertMoviesIntoTheatre = async (theatreId, movieIds, insert, user) => {
   // Find the theatre by ID
   const theatre = await Theatre.findById(theatreId);
   if (!theatre) {
     throw new AppError("No theatre found by this id", StatusCodes.NOT_FOUND);
   }
 
+  if (theatre.owner.toString() !== user.id && user.userRole !== 'admin') {
+    throw new AppError('You are not authorized to insert movies into theatre', StatusCodes.FORBIDDEN)
+  }
   if (insert) {
     // Insert mode: Add movie IDs to the theatre's movies array
     movieIds.forEach((movieId) => {
@@ -207,7 +227,10 @@ const getAllTheatresByMovie = async (movieId) => {
     const theatres = await Theatre.find({ movies: movieId }).populate("movies");
 
     if (theatres.length === 0) {
-      throw new AppError("No theatres found running this movie", StatusCodes.NOT_FOUND);
+      throw new AppError(
+        "No theatres found running this movie",
+        StatusCodes.NOT_FOUND,
+      );
     }
 
     return theatres;

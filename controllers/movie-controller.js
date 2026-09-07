@@ -22,8 +22,9 @@ const {
  */
 const createMovie = async (req, res, next) => {
   try {
+    const userId = req.user.id;
     // Call the service layer to create a new movie with the request body data
-    const response = await createMovieService(req.body);
+    const response = await createMovieService(req.body, userId);
 
     // On success, send the created movie data back to the client
     return res
@@ -46,8 +47,9 @@ const createMovie = async (req, res, next) => {
  */
 const deleteMovie = async (req, res, next) => {
   try {
+    const user = req.user;
     // Call the service layer to delete the movie by ID
-    const response = await deleteMovieById(req.params.id);
+    const response = await deleteMovieById(req.params.id, user);
 
     // On success, send confirmation back to the client
     return res
@@ -70,8 +72,9 @@ const deleteMovie = async (req, res, next) => {
  */
 const updateMovie = async (req, res, next) => {
   try {
+    const user = req.user;
     // Call the service layer to update the movie with the provided ID and new data
-    const response = await updateMovieById(req.params.id, req.body);
+    const response = await updateMovieById(req.params.id, req.body, user);
 
     // On success, send the updated movie data back to the client
     return res

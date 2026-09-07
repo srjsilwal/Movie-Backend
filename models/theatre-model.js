@@ -26,6 +26,11 @@ const theatreSchema = new mongoose.Schema(
     movies: {
       type: [mongoose.Schema.Types.ObjectId],
       ref: 'movie'
+    },
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'user',
+      required: true
     }
   },
   { timeStamp: true },

@@ -24,7 +24,12 @@ const movieSchema = new mongoose.Schema({
     trailerUrl: {
         type: String,
         default: 'release1/movie1'
-    }
+    },
+    owner: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'user',
+          required: true
+        }
 }, { timeStamp: true })
 
 const Movie = mongoose.model('movie', movieSchema)
