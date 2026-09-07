@@ -3,7 +3,7 @@ const { User } = require("../models/user-model");
 const { AppError } = require("../utils/app-error");
 const jwt = require("jsonwebtoken");
 
-const isAuthenticated = async (req, next) => {
+const isAuthenticated = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -21,7 +21,7 @@ const isAuthenticated = async (req, next) => {
     if (!user) {
       return next(new AppError("User no longer exists", StatusCodes.FORBIDDEN));
     }
-    if (user.userStatus !== "approved") {
+    if (user.userRole === "client" && user.userStatus !== "approved") {
       return next(
         new AppError(
           "Your account is not approved. Please contact admin",
@@ -51,7 +51,7 @@ const isAuthenticated = async (req, next) => {
   }
 };
 
-const isAdmin = (req, next) => {
+const isAdmin = (req,res, next) => {
   if (req.user.userRole !== "admin") {
     return next(
       new AppError(
@@ -62,8 +62,8 @@ const isAdmin = (req, next) => {
   }
   next();
 };
-const isAdminOrClient = (req, next) => {
-  if (req.user.userRole !== "admin" || req.user.userRole !== "client") {
+const isAdminOrClient = (req,res, next) => {
+  if (req.user.userRole !== "admin" && req.user.userRole !== "client") {
     return next(
       new AppError(
         "Access denied. Admin or Client privileges required.",
@@ -73,7 +73,7 @@ const isAdminOrClient = (req, next) => {
   }
   next();
 };
-const isClient = (req, next) => {
+const isClient = (req,res, next) => {
   if (req.user.userRole !== "client") {
     return next(
       new AppError(
@@ -87,10 +87,12 @@ const isClient = (req, next) => {
 
 const isCustomer = (req, res, next) => {
   if (req.user.userRole !== "customer") {
-    return res.status(StatusCodes.FORBIDDEN).json({
-      success: false,
-      message: "Access denied. Customer account required.",
-    });
+    return next(
+      new AppError(
+        "Access denied. Customer account required.",
+        StatusCodes.FORBIDDEN,
+      ),
+    );
   }
   next();
 };

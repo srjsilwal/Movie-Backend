@@ -49,17 +49,26 @@ const userSchema = new mongoose.Schema(
     timestamps: true, // Adds createdAt and updatedAt automatically
   },
 );
-userSchema.pre("save", async function(next) {
-  if (!this.isModified(password)) {
-    return next();
+// userSchema.pre("save", async function(next) {
+//   if (!this.isModified("password")) {
+//     return next();
+//   }
+//   try {
+//     const salt = await bcrypt.genSalt(10);
+//     this.password = await bcrypt.hash(this.password, salt);
+//     next();
+//   } catch (error) {
+//     next(error);
+//   }
+// });
+
+userSchema.pre("save", async function () {
+  if (!this.isModified("password")) {
+    return;
   }
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error) {
-    next(error);
-  }
+
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
 });
 
 userSchema.methods.comparePassword = async function (currentPassword) {
@@ -74,7 +83,7 @@ userSchema.methods.createJwtToken = function () {
       role: this.userRole,
     },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.expiry || "7d" },
+    { expiresIn: process.env.JWT_EXPIRES_IN || "7d" },
   );
 };
 
@@ -90,7 +99,7 @@ userSchema.methods.isSafeObject = function () {
   };
 };
 
-const User = new mongoose.Model("user", userSchema);
+const User = mongoose.model("user", userSchema);
 module.exports = {
   User,
 };
