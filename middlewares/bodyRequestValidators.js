@@ -108,8 +108,186 @@ const validateUpdateMoviesRequest = (req, res, next) => {
   next();
 };
 
+/**
+ * Validates the request body for creating a new show.
+ * Checks for required fields and valid formats.
+ */
+const validateCreateShowRequest = (req, res, next) => {
+  const { movieId, theatreId, date, startTime, screen } = req.body;
+
+  if (!movieId) {
+    return next(
+      new AppError("Movie ID is required to create a show", StatusCodes.BAD_REQUEST)
+    );
+  }
+
+  if (!theatreId) {
+    return next(
+      new AppError("Theatre ID is required to create a show", StatusCodes.BAD_REQUEST)
+    );
+  }
+
+  if (!date) {
+    return next(
+      new AppError("Show date is required", StatusCodes.BAD_REQUEST)
+    );
+  }
+
+  if (!startTime) {
+    return next(
+      new AppError("Start time is required for the show", StatusCodes.BAD_REQUEST)
+    );
+  }
+
+  // Validate time format (HH:MM)
+  const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+  if (!timeRegex.test(startTime)) {
+    return next(
+      new AppError(
+        "Start time must be in valid HH:MM format (24-hour, e.g., 14:30)",
+        StatusCodes.BAD_REQUEST
+      )
+    );
+  }
+
+  if (!screen) {
+    return next(
+      new AppError("Screen number is required", StatusCodes.BAD_REQUEST)
+    );
+  }
+
+  const validScreens = ["Screen 1", "Screen 2", "Screen 3", "Screen 4", "Screen 5"];
+  if (!validScreens.includes(screen)) {
+    return next(
+      new AppError(
+        "Screen must be one of: Screen 1, Screen 2, Screen 3, Screen 4, or Screen 5",
+        StatusCodes.BAD_REQUEST
+      )
+    );
+  }
+
+  // Validate date is not in the past
+  const selectedDate = new Date(date);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (selectedDate < today) {
+    return next(
+      new AppError(
+        "Show date cannot be in the past. Please select a future date.",
+        StatusCodes.BAD_REQUEST
+      )
+    );
+  }
+
+  next();
+};
+
+/**
+ * Validates the request body for updating a show.
+ * Only validates fields that are being updated.
+ */
+const validateUpdateShowRequest = (req, res, next) => {
+  const { startTime, screen, date, price, totalSeats } = req.body;
+
+  if (startTime) {
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!timeRegex.test(startTime)) {
+      return next(
+        new AppError(
+          "Start time must be in valid HH:MM format (24-hour, e.g., 14:30)",
+          StatusCodes.BAD_REQUEST
+        )
+      );
+    }
+  }
+
+  if (screen) {
+    const validScreens = ["Screen 1", "Screen 2", "Screen 3", "Screen 4", "Screen 5"];
+    if (!validScreens.includes(screen)) {
+      return next(
+        new AppError(
+          "Screen must be one of: Screen 1, Screen 2, Screen 3, Screen 4, or Screen 5",
+          StatusCodes.BAD_REQUEST
+        )
+      );
+    }
+  }
+
+  if (date) {
+    const selectedDate = new Date(date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (selectedDate < today) {
+      return next(
+        new AppError(
+          "Show date cannot be in the past. Please select a future date.",
+          StatusCodes.BAD_REQUEST
+        )
+      );
+    }
+  }
+
+  if (price) {
+    const { regular, gold, platinum } = price;
+    if (regular !== undefined && (typeof regular !== "number" || regular < 0)) {
+      return next(
+        new AppError("Regular seat price must be a non-negative number", StatusCodes.BAD_REQUEST)
+      );
+    }
+    if (gold !== undefined && (typeof gold !== "number" || gold < 0)) {
+      return next(
+        new AppError("Gold seat price must be a non-negative number", StatusCodes.BAD_REQUEST)
+      );
+    }
+    if (platinum !== undefined && (typeof platinum !== "number" || platinum < 0)) {
+      return next(
+        new AppError("Platinum seat price must be a non-negative number", StatusCodes.BAD_REQUEST)
+      );
+    }
+  }
+
+  if (totalSeats) {
+    const { regular, gold, platinum } = totalSeats;
+    if (regular !== undefined && (typeof regular !== "number" || regular < 0)) {
+      return next(
+        new AppError("Regular seat count must be a non-negative number", StatusCodes.BAD_REQUEST)
+      );
+    }
+    if (gold !== undefined && (typeof gold !== "number" || gold < 0)) {
+      return next(
+        new AppError("Gold seat count must be a non-negative number", StatusCodes.BAD_REQUEST)
+      );
+    }
+    if (platinum !== undefined && (typeof platinum !== "number" || platinum < 0)) {
+      return next(
+        new AppError("Platinum seat count must be a non-negative number", StatusCodes.BAD_REQUEST)
+      );
+    }
+  }
+
+  // Ensure at least one field is being updated
+  if (
+    !startTime &&
+    !screen &&
+    !date &&
+    !price &&
+    !totalSeats
+  ) {
+    return next(
+      new AppError(
+        "Please provide at least one field to update (startTime, screen, date, price, or totalSeats)",
+        StatusCodes.BAD_REQUEST
+      )
+    );
+  }
+
+  next();
+};
+
 module.exports = {
   validateRequest,
   validateTheatreRequest,
   validateUpdateMoviesRequest,
+  validateCreateShowRequest,
+  validateUpdateShowRequest,
 };

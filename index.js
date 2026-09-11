@@ -1,7 +1,8 @@
 const express = require("express");
 const { dbConnection } = require("./config/db-config");
-const {movieRouter} = require("./routes/movie-route");
+const { movieRouter } = require("./routes/movie-route");
 const { theatreRouter } = require("./routes/theatre-route");
+const { showRouter } = require("./routes/show-route");
 const swaggerJSDoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
 const generateSwaggerFromRoutes = require("./swagger/autoSwagger");
@@ -37,6 +38,7 @@ const swaggerSpec = {
   paths: {
     ...generateSwaggerFromRoutes(movieRouter, "/mb/api/v1/movies", "Movies"),
     ...generateSwaggerFromRoutes(theatreRouter, "/mb/api/v1/theatres", "Theatres"),
+    ...generateSwaggerFromRoutes(showRouter, "/mb/api/v1/shows", "Shows"),
   },
 };
 
@@ -46,6 +48,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use("/mb/api/v1/movies", movieRouter);
 app.use("/mb/api/v1/theatres", theatreRouter);
+app.use("/mb/api/v1/shows", showRouter);
 app.use("/mb/api/v1/users", userRouter);
 
 // Centralized error handling middleware
