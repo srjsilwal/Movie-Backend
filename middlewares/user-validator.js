@@ -2,7 +2,7 @@ const { StatusCodes } = require("http-status-codes");
 const { AppError } = require("../utils/app-error");
 
 const validateSignupRequest = (req, res, next) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, userRole } = req.body;
 
   if (!name || name.trim().length < 3) {
     return next(
@@ -30,6 +30,15 @@ const validateSignupRequest = (req, res, next) => {
     return next(
       new AppError(
         "Password must be at least 6 characters long",
+        StatusCodes.BAD_REQUEST,
+      ),
+    );
+  }
+
+  if (userRole && !["customer", "client"].includes(userRole)) {
+    return next(
+      new AppError(
+        "You can register only as a customer or client",
         StatusCodes.BAD_REQUEST,
       ),
     );

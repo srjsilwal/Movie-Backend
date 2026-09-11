@@ -113,15 +113,15 @@ const validateUpdateMoviesRequest = (req, res, next) => {
  * Checks for required fields and valid formats.
  */
 const validateCreateShowRequest = (req, res, next) => {
-  const { movieId, theatreId, date, startTime, screen } = req.body;
+  const { movie, theatre, date, startTime, screen } = req.body;
 
-  if (!movieId) {
+  if (!movie) {
     return next(
       new AppError("Movie ID is required to create a show", StatusCodes.BAD_REQUEST)
     );
   }
 
-  if (!theatreId) {
+  if (!theatre) {
     return next(
       new AppError("Theatre ID is required to create a show", StatusCodes.BAD_REQUEST)
     );
@@ -140,7 +140,7 @@ const validateCreateShowRequest = (req, res, next) => {
   }
 
   // Validate time format (HH:MM)
-  const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+  const timeRegex = /^([01]\d|2[0-3]):[0-5]\d$/;
   if (!timeRegex.test(startTime)) {
     return next(
       new AppError(
@@ -168,6 +168,11 @@ const validateCreateShowRequest = (req, res, next) => {
 
   // Validate date is not in the past
   const selectedDate = new Date(date);
+  if (Number.isNaN(selectedDate.getTime())) {
+    return next(
+      new AppError("Show date must be a valid date", StatusCodes.BAD_REQUEST)
+    );
+  }
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   if (selectedDate < today) {
@@ -190,7 +195,7 @@ const validateUpdateShowRequest = (req, res, next) => {
   const { startTime, screen, date, price, totalSeats } = req.body;
 
   if (startTime) {
-    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    const timeRegex = /^([01]\d|2[0-3]):[0-5]\d$/;
     if (!timeRegex.test(startTime)) {
       return next(
         new AppError(
@@ -215,6 +220,11 @@ const validateUpdateShowRequest = (req, res, next) => {
 
   if (date) {
     const selectedDate = new Date(date);
+    if (Number.isNaN(selectedDate.getTime())) {
+      return next(
+        new AppError("Show date must be a valid date", StatusCodes.BAD_REQUEST)
+      );
+    }
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (selectedDate < today) {

@@ -4,7 +4,7 @@ const { AppError } = require("../utils/app-error");
 
 const createMovieService = async (data, userId) => {
   try {
-    const movie = await Movie.create({ ...data, owner: { userId } });
+    const movie = await Movie.create({ ...data, owner: userId });
     if (!movie) {
       throw new AppError("Movie cannot be created", StatusCodes.NO_CONTENT);
     }
@@ -16,17 +16,19 @@ const createMovieService = async (data, userId) => {
       Object.keys(error.errors).forEach((key) => {
         err[key] = error.errors[key].message;
       });
-      throw new AppError("Validation failed", StatusCodes.UNPROCESSABLE_ENTITY, err);
+      throw new AppError(
+        "Validation failed",
+        StatusCodes.UNPROCESSABLE_ENTITY,
+        err,
+      );
     }
 
     // MongoDB duplicate-key error — code 11000, has keyValue/keyPattern
     if (error.name === "MongoServerError" && error.code === 11000) {
       const field = Object.keys(error.keyPattern)[0];
-      throw new AppError(
-        "Duplicate field",
-        StatusCodes.UNPROCESSABLE_ENTITY,
-        { [field]: "already exists" },
-      );
+      throw new AppError("Duplicate field", StatusCodes.UNPROCESSABLE_ENTITY, {
+        [field]: "already exists",
+      });
     }
 
     // Re-throw AppError as-is, wrap other errors
@@ -40,8 +42,11 @@ const deleteMovieById = async (id, user) => {
   if (!movie) {
     throw new AppError("No movie found by this id", StatusCodes.NOT_FOUND);
   }
-  if (movie.owner.toString() !== user.id && user.userRole !== 'admin') {
-    throw new AppError("You are not authorized to delete this movie", StatusCodes.FORBIDDEN);
+  if (movie.owner.toString() !== user.id && user.userRole !== "admin") {
+    throw new AppError(
+      "You are not authorized to delete this movie",
+      StatusCodes.FORBIDDEN,
+    );
   }
   await Movie.deleteOne({ id });
   return movie;
@@ -53,8 +58,11 @@ const updateMovieById = async (id, data, user) => {
     if (!movie) {
       throw new AppError("No movie found by this id", StatusCodes.NOT_FOUND);
     }
-    if (movie.owner.toString() !== user.id && user.userRole !== 'admin') {
-      throw new AppError("You are not authorized to update the movie", StatusCodes.FORBIDDEN);
+    if (movie.owner.toString() !== user.id && user.userRole !== "admin") {
+      throw new AppError(
+        "You are not authorized to update the movie",
+        StatusCodes.FORBIDDEN,
+      );
     }
     Object.assign(movie, data);
     await movie.save();
@@ -65,7 +73,11 @@ const updateMovieById = async (id, data, user) => {
       Object.keys(error.errors).forEach((key) => {
         err[key] = error.errors[key].message;
       });
-      throw new AppError("Validation failed", StatusCodes.UNPROCESSABLE_ENTITY, err);
+      throw new AppError(
+        "Validation failed",
+        StatusCodes.UNPROCESSABLE_ENTITY,
+        err,
+      );
     }
     throw error;
   }
@@ -86,7 +98,10 @@ const fetchMovies = async (filter) => {
   }
   const movies = await Movie.find(query);
   if (!movies) {
-    throw new AppError("Not able to find the query movies", StatusCodes.NOT_FOUND);
+    throw new AppError(
+      "Not able to find the query movies",
+      StatusCodes.NOT_FOUND,
+    );
   }
   return movies;
 };
@@ -98,3 +113,7 @@ module.exports = {
   updateMovieById,
   fetchMovies,
 };
+
+
+
+

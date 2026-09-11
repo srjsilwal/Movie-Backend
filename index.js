@@ -36,6 +36,7 @@ const swaggerSpec = {
   ],
 
   paths: {
+    ...generateSwaggerFromRoutes(userRouter, "/mb/api/v1/users", "Users"),
     ...generateSwaggerFromRoutes(movieRouter, "/mb/api/v1/movies", "Movies"),
     ...generateSwaggerFromRoutes(theatreRouter, "/mb/api/v1/theatres", "Theatres"),
     ...generateSwaggerFromRoutes(showRouter, "/mb/api/v1/shows", "Shows"),

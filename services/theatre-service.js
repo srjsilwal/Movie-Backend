@@ -11,7 +11,7 @@ const { AppError } = require("../utils/app-error");
  */
 const createTheatreService = async (data, userId) => {
   try {
-    const theatre = await Theatre.create({ ...data, owner: { userId } });
+    const theatre = await Theatre.create({ ...data, owner: userId });
     if (!theatre) {
       throw new AppError("Theatre cannot be created", StatusCodes.NO_CONTENT);
     }

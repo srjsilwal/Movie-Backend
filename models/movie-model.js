@@ -32,13 +32,15 @@ const movieSchema = new mongoose.Schema(
     },
     duration: {
       type: Number,
+      required: [true, "Movie duration is required"],
+      min: [1, "Movie duration must be at least 1 minute"],
     },
     language: {
       type: [String],
       default: "english",
     },
   },
-  { timeStamp: true },
+  { timestamps: true },
 );
 
 const Movie = mongoose.model("movie", movieSchema);

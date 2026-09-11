@@ -32,6 +32,28 @@ const calculateEndTime = (startTime, duration) => {
 };
 
 /**
+ * Builds a continuous minute range for a show. An end time earlier than (or
+ * equal to) its start time belongs to the following day.
+ */
+const getShowTimeRange = (startTime, endTime) => {
+  const start = timeToMinutes(startTime);
+  let end = timeToMinutes(endTime);
+
+  if (end <= start) {
+    end += 24 * 60;
+  }
+
+  return { start, end };
+};
+
+const showsOverlap = (firstStartTime, firstEndTime, secondStartTime, secondEndTime) => {
+  const first = getShowTimeRange(firstStartTime, firstEndTime);
+  const second = getShowTimeRange(secondStartTime, secondEndTime);
+
+  return first.start < second.end && first.end > second.start;
+};
+
+/**
  * Creates a new show after validating all business rules.
  * @param {Object} showData - Show details from request body
  * @param {Object} user - Authenticated user object
@@ -40,7 +62,7 @@ const calculateEndTime = (startTime, duration) => {
 const createShowService = async (showData, user) => {
   try {
     // Validate that the movie exists
-    const movie = await Movie.findById(showData.movieId);
+    const movie = await Movie.findById(showData.movie);
     if (!movie) {
       throw new AppError(
         "The selected movie does not exist. Please choose a valid movie.",
@@ -49,7 +71,7 @@ const createShowService = async (showData, user) => {
     }
 
     // Validate that the theatre exists
-    const theatre = await Theatre.findById(showData.theatreId);
+    const theatre = await Theatre.findById(showData.theatre);
     if (!theatre) {
       throw new AppError(
         "The selected theatre does not exist. Please choose a valid theatre.",
@@ -76,20 +98,32 @@ const createShowService = async (showData, user) => {
       );
     }
 
+    if (!Number.isFinite(movie.duration) || movie.duration <= 0) {
+      throw new AppError(
+        "The selected movie must have a valid duration in minutes before a show can be created.",
+        StatusCodes.UNPROCESSABLE_ENTITY,
+      );
+    }
+
     // Calculate show end time based on movie duration
     const endTime = calculateEndTime(showData.startTime, movie.duration);
 
-    const newStartMinutes = timeToMinutes(showData.startTime);
-    const newEndMinutes = timeToMinutes(endTime);
-
-    // Check for overlapping shows on the same screen and date
-    const overlappingShow = await Show.findOne({
-      theatre: showData.theatreId,
+    // Check for overlapping shows on the same screen and date.
+    // Times are stored as HH:MM strings, so compare their minute values in code.
+    const showsOnScreen = await Show.find({
+      theatre: showData.theatre,
       screen: showData.screen,
       date: showData.date,
       status: { $ne: "cancelled" }, // Ignore cancelled shows
-      startingTimeMinutes: { $lt: newEndMinutes },
-      endTimeMinutes: { $gt: newStartMinutes },
+    });
+
+    const overlappingShow = showsOnScreen.find((existingShow) => {
+      return showsOverlap(
+        showData.startTime,
+        endTime,
+        existingShow.startTime,
+        existingShow.endTime,
+      );
     });
 
     if (overlappingShow) {
@@ -295,11 +329,16 @@ const updateShowService = async (showId, updateData, user) => {
           StatusCodes.NOT_FOUND,
         );
       }
+      
+
+      if (!Number.isFinite(movie.duration) || movie.duration <= 0) {
+        throw new AppError(
+          "The movie must have a valid duration in minutes before this show can be updated.",
+          StatusCodes.UNPROCESSABLE_ENTITY,
+        );
+      }
 
       const newEndTime = calculateEndTime(newUpdatedTime, movie.duration);
-
-      const newStartMins = timeToMinutes(newUpdatedTime);
-      const newEndMins = timeToMinutes(newEndTime);
 
       // Find other shows on the same screen and date (excluding current show)
       const otherShows = await Show.find({
@@ -312,10 +351,12 @@ const updateShowService = async (showId, updateData, user) => {
 
       // Check for time overlap with other shows
       const hasOverlap = otherShows.some((otherShow) => {
-        const otherStartMins = timeToMinutes(otherShow.startTime);
-        const otherEndMins = timeToMinutes(otherShow.endTime);
-
-        return newStartMins < otherEndMins && newEndMins > otherStartMins;
+        return showsOverlap(
+          newUpdatedTime,
+          newEndTime,
+          otherShow.startTime,
+          otherShow.endTime,
+        );
       });
 
       if (hasOverlap) {

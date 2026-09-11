@@ -11,10 +11,14 @@ const signupService = async (userData) => {
         StatusCodes.CONFLICT,
       );
     }
-    const user = await User.create(userData);
-    if(user.userRole === 'customer'){
-      user.userStatus = 'approved'
-    }
+    // Customers can use their accounts immediately. Client accounts must stay
+    // pending until an admin explicitly changes their status to approved.
+    const userRole = userData.userRole === "client" ? "client" : "customer";
+    const user = await User.create({
+      ...userData,
+      userRole,
+      userStatus: userRole === "customer" ? "approved" : "pending",
+    });
     return user.isSafeObject();
   } catch (error) {
     if (error.name === "ValidationError") {
@@ -96,6 +100,7 @@ const updateRoleOrStatus = async (
   userStatus,
 ) => {
   try {
+    // This protects the system from an admin accidentally removing their own admin access.
     if (adminId === targetUserId && userRole && userRole !== "admin") {
       throw new AppError(
         "You cannot change your own admin role",
@@ -106,8 +111,20 @@ const updateRoleOrStatus = async (
     if (!user) {
       throw new AppError("User not found", StatusCodes.NOT_FOUND);
     }
+
+    // checks whether the requested role is client and whether the user was previously not a client
+    const isChangingToClient =
+      userRole === "client" && user.userRole !== "client";
+
     if (userRole) user.userRole = userRole;
-    if (userStatus) user.userStatus = userStatus;
+
+    if (userStatus) {
+      user.userStatus = userStatus;
+    } else if (userRole === "customer") {
+      user.userStatus = "approved";
+    } else if (isChangingToClient) {
+      user.userStatus = "pending";
+    }
     await user.save();
     return user.isSafeObject();
   } catch (error) {

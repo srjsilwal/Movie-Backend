@@ -33,7 +33,7 @@ const theatreSchema = new mongoose.Schema(
       required: true
     }
   },
-  { timeStamp: true },
+  { timestamps: true },
 );
 
 const Theatre = mongoose.model("theatre", theatreSchema);

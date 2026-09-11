@@ -128,10 +128,10 @@ function getSchemaForPath(method, path) {
   if (path === "/mb/api/v1/shows" && method === "post") {
     return {
       type: "object",
-      required: ["movieId", "theatreId", "date", "startTime", "screen"],
+      required: ["movie", "theatre", "date", "startTime", "screen"],
       properties: {
-        movieId: { type: "string", example: "64a1b2c3d4e5f600123456789" },
-        theatreId: { type: "string", example: "64a1b2c3d4e5f600123456790" },
+        movie: { type: "string", example: "64a1b2c3d4e5f600123456789" },
+        theatre: { type: "string", example: "64a1b2c3d4e5f600123456790" },
         date: { type: "string", format: "date", example: "2024-12-25" },
         startTime: { type: "string", example: "14:30" },
         screen: { type: "string", example: "Screen 1" },
