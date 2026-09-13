@@ -44,12 +44,12 @@ const showSchema = new mongoose.Schema(
       },
       gold: {
         type: Number,
-        default: 300,
+        default: 350,
         min: [0, "Price cannot be negative"],
       },
       platinum: {
         type: Number,
-        default: 400,
+        default: 500,
         min: [0, "Price cannot be negative"],
       },
     },

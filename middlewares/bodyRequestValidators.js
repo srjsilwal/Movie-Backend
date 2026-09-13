@@ -294,10 +294,33 @@ const validateUpdateShowRequest = (req, res, next) => {
   next();
 };
 
+/**
+ * Validates request shape only. Seat availability and pricing require show data,
+ * so they are intentionally enforced in the booking service.
+ */
+const validateBookingRequest = (req, res, next) => {
+  const { seats } = req.body;
+
+  if (!Array.isArray(seats)) {
+    return next(new AppError("Seats must be provided as an array, for example: [\"A1\", \"A2\"].", StatusCodes.BAD_REQUEST));
+  }
+  if (seats.length < 1 || seats.length > 10) {
+    return next(new AppError("Select between 1 and 10 seats per booking.", StatusCodes.BAD_REQUEST));
+  }
+  if (seats.some((seat) => typeof seat !== "string" || !/^[A-M](?:[1-9]|[1-9][0-9])$/.test(seat))) {
+    return next(new AppError("Each seat must use a valid format such as A1 or M20.", StatusCodes.BAD_REQUEST));
+  }
+  if (new Set(seats).size !== seats.length) {
+    return next(new AppError("Each selected seat must be listed only once.", StatusCodes.BAD_REQUEST));
+  }
+  next();
+};
+
 module.exports = {
   validateRequest,
   validateTheatreRequest,
   validateUpdateMoviesRequest,
   validateCreateShowRequest,
   validateUpdateShowRequest,
+  validateBookingRequest,
 };
