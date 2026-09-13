@@ -13,34 +13,59 @@ const bookingSchema = new mongoose.Schema(
       required: [true, "Show is required"],
     },
     seats: {
-      type: [String],
+      type: [String], // ["A1", "A2", "B5"]
       required: [true, "Seats are required"],
+      validate: {
+        validator: (seats) => seats.length > 0 && seats.length <= 10,
+        message: "You can book between 1 and 10 seats at a time",
+      },
+    },
+    seatTiers: {
+      regular: { type: [String], default: [] }, // ["A1", "A2"]
+      gold: { type: [String], default: [] }, // ["F1"]
+      platinum: { type: [String], default: [] }, // ["K1"]
     },
     totalPrice: {
       type: Number,
-      required: true,
-    },
-    paymentStatus: {
-      type: String,
-      enum: ["pending", "completed", "failed", "refunded"],
-      default: "pending",
+      required: [true, "Total price is required"],
+      min: [0, "Price cannot be negative"],
     },
     status: {
       type: String,
       enum: {
-        values: ["pending", "confirmed", "expired", "cancelled"],
-        message:
-          "Status must be according to the values[pending, confirmed, expired, cancelled]",
+        values: ["pending", "confirmed", "cancelled", "expired"],
+        message: "Invalid booking status",
       },
       default: "pending",
     },
-    expiredAt: {
+    paymentStatus: {
+      type: String,
+      enum: {
+        values: ["pending", "completed", "failed", "refunded"],
+        message: "Invalid payment status",
+      },
+      default: "pending",
+    },
+    expiresAt: {
       type: Date,
+      required: false,
+      index: { expires: 0 }, // TTL index - auto-delete after expiresAt
+    },
+    bookingNumber: {
+      type: String,
+      unique: true,
       required: true,
     },
   },
-  { timeStamp: true },
+  {
+    timestamps: true,
+  },
 );
+
+// Indexes for efficient queries
+bookingSchema.index({ user: 1, status: 1 });
+bookingSchema.index({ show: 1, status: 1 });
+
 
 const Booking = mongoose.model("booking", bookingSchema);
 
