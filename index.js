@@ -10,6 +10,7 @@ const { StatusCodes } = require("http-status-codes");
 const { createErrorResponse } = require("./utils/responsebody");
 const { userRouter } = require("./routes/user-route");
 const {bookingRouter} = require("./routes/booking-route");
+const { paymentRouter } = require("./routes/payment-route");
 require("dotenv").config();
 
 dbConnection();
@@ -42,6 +43,7 @@ const swaggerSpec = {
     ...generateSwaggerFromRoutes(theatreRouter, "/mb/api/v1/theatres", "Theatres"),
     ...generateSwaggerFromRoutes(showRouter, "/mb/api/v1/shows", "Shows"),
     ...generateSwaggerFromRoutes(bookingRouter, "/mb/api/v1/bookings", "Bookings"),
+    ...generateSwaggerFromRoutes(paymentRouter, "/mb/api/v1/payments", "Payments"),
   },
 };
 
@@ -54,6 +56,7 @@ app.use("/mb/api/v1/theatres", theatreRouter);
 app.use("/mb/api/v1/shows", showRouter);
 app.use("/mb/api/v1/users", userRouter);
 app.use("/mb/api/v1/bookings", bookingRouter);
+app.use("/mb/api/v1/payments", paymentRouter);
 
 // Centralized error handling middleware
 // Must be defined after all routes

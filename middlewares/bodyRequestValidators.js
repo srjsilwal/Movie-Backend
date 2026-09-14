@@ -316,6 +316,41 @@ const validateBookingRequest = (req, res, next) => {
   next();
 };
 
+const validatePaymentRequest = (req, res, next) => {
+  const { amount, method } = req.body;
+  const validMethods = ["card", "upi", "wallet", "netbanking"];
+
+  if (typeof amount !== "number" || !Number.isFinite(amount) || amount <= 0) {
+    return next(
+      new AppError("Amount must be a positive number.", StatusCodes.BAD_REQUEST),
+    );
+  }
+  if (!validMethods.includes(method)) {
+    return next(
+      new AppError(
+        `Payment method must be one of: ${validMethods.join(", ")}.`,
+        StatusCodes.BAD_REQUEST,
+      ),
+    );
+  }
+  next();
+};
+
+const validateRefundRequest = (req, res, next) => {
+  const { reason } = req.body;
+  if (reason !== undefined && (typeof reason !== "string" || !reason.trim())) {
+    return next(
+      new AppError("Refund reason must be a non-empty string.", StatusCodes.BAD_REQUEST),
+    );
+  }
+  if (typeof reason === "string" && reason.trim().length > 500) {
+    return next(
+      new AppError("Refund reason cannot exceed 500 characters.", StatusCodes.BAD_REQUEST),
+    );
+  }
+  next();
+};
+
 module.exports = {
   validateRequest,
   validateTheatreRequest,
@@ -323,4 +358,6 @@ module.exports = {
   validateCreateShowRequest,
   validateUpdateShowRequest,
   validateBookingRequest,
+  validatePaymentRequest,
+  validateRefundRequest,
 };
