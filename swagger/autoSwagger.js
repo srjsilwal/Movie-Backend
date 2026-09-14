@@ -139,6 +139,27 @@ function getSchemaForPath(method, path) {
     };
   }
 
+  // Payments
+  if (path.match(/^\/mb\/api\/v1\/payments\/booking\/\{[^}]+\}$/) && method === "post") {
+    return {
+      type: "object",
+      required: ["amount", "method"],
+      properties: {
+        amount: { type: "number", example: 750 },
+        method: { type: "string", enum: ["card", "upi", "wallet", "netbanking"], example: "card" },
+      },
+    };
+  }
+
+  if (path.match(/^\/mb\/api\/v1\/payments\/booking\/\{[^}]+\}\/refund$/) && method === "post") {
+    return {
+      type: "object",
+      properties: {
+        reason: { type: "string", example: "Unable to attend the show" },
+      },
+    };
+  }
+
   if (path.match(/^\/mb\/api\/v1\/shows\/\{[^}]+\}$/) && method === "patch") {
     return {
       type: "object",
